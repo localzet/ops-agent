@@ -1,0 +1,11 @@
+.git
+build
+build-*
+cmake-build-*
+.cache
+.vs
+.vscode
+*.db
+*.db-shm
+*.db-wal
+*.log

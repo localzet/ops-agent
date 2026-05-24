@@ -1,0 +1,14 @@
+server:
+  host: "127.0.0.1"
+  port: 8080
+  threads: 4
+
+diagnostics:
+  tcp_timeout_ms: 2000
+  max_services_per_request: 20
+
+logging:
+  level: "info"
+
+storage:
+  sqlite_path: "/var/lib/ops-agent/ops-agent.db"

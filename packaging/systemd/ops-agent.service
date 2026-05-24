@@ -1,0 +1,21 @@
+[Unit]
+Description=ops-agent observability service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ops-agent
+Group=ops-agent
+Environment=OPS_AGENT_CONFIG=/etc/ops-agent/config.yml
+ExecStart=/usr/local/bin/ops-agent
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ops-agent
+
+[Install]
+WantedBy=multi-user.target
