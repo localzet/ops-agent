@@ -8,6 +8,7 @@ Type=simple
 User=ops-agent
 Group=ops-agent
 Environment=OPS_AGENT_CONFIG=/etc/ops-agent/config.yml
+EnvironmentFile=/etc/ops-agent/ops-agent.env
 ExecStart=/usr/local/bin/ops-agent
 Restart=on-failure
 RestartSec=5
@@ -16,6 +17,12 @@ PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
 ReadWritePaths=/var/lib/ops-agent
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target

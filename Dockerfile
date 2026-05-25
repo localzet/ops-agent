@@ -41,6 +41,6 @@ EXPOSE 8080
 
 ENV OPS_AGENT_CONFIG=/etc/ops-agent/config.yml
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+    CMD curl -fsS http://127.0.0.1:8080/health/live || exit 1
 
 ENTRYPOINT ["/usr/local/bin/ops-agent"]
