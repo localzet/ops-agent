@@ -7,6 +7,7 @@ namespace ops_agent::features::services {
 
 struct ServiceStatusDto {
     std::string name;
+    std::string status;
     std::string load_state;
     std::string active_state;
     std::string sub_state;

@@ -5,6 +5,7 @@ server:
 
 diagnostics:
   tcp_timeout_ms: 2000
+  systemctl_timeout_ms: 2000
   max_services_per_request: 20
 
 logging:

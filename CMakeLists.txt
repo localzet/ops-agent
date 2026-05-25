@@ -104,6 +104,13 @@ if(WIN32)
     target_link_libraries(ops_agent_lib PUBLIC ws2_32 mswsock)
 endif()
 
+if(UNIX AND NOT APPLE)
+    find_library(ANL_LIBRARY anl)
+    if(ANL_LIBRARY)
+        target_link_libraries(ops_agent_lib PUBLIC ${ANL_LIBRARY})
+    endif()
+endif()
+
 add_executable(ops-agent src/main.cpp)
 target_link_libraries(ops-agent PRIVATE ops_agent_lib)
 

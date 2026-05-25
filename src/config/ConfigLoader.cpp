@@ -90,6 +90,8 @@ Config ConfigLoader::load(const std::optional<std::string>& path) const
                 config.server.threads = parseUint16(value, "server.threads");
             } else if (full_key == "diagnostics.tcp_timeout_ms") {
                 config.diagnostics.tcp_timeout_ms = parseInt(value, "diagnostics.tcp_timeout_ms");
+            } else if (full_key == "diagnostics.systemctl_timeout_ms") {
+                config.diagnostics.systemctl_timeout_ms = parseInt(value, "diagnostics.systemctl_timeout_ms");
             } else if (full_key == "diagnostics.max_services_per_request") {
                 config.diagnostics.max_services_per_request = std::stoul(value);
             } else if (full_key == "logging.level") {
@@ -117,6 +119,9 @@ void ConfigLoader::applyEnv(Config& config)
     }
     if (auto value = envValue("OPS_AGENT_TCP_TIMEOUT_MS")) {
         config.diagnostics.tcp_timeout_ms = parseInt(*value, "OPS_AGENT_TCP_TIMEOUT_MS");
+    }
+    if (auto value = envValue("OPS_AGENT_SYSTEMCTL_TIMEOUT_MS")) {
+        config.diagnostics.systemctl_timeout_ms = parseInt(*value, "OPS_AGENT_SYSTEMCTL_TIMEOUT_MS");
     }
     if (auto value = envValue("OPS_AGENT_MAX_SERVICES_PER_REQUEST")) {
         config.diagnostics.max_services_per_request = std::stoul(*value);

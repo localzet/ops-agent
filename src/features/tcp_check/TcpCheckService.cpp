@@ -1,5 +1,6 @@
 #include "ops_agent/features/tcp_check/TcpCheckService.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace ops_agent::features::tcp_check {
@@ -28,7 +29,8 @@ TcpCheckDto TcpCheckService::check(const std::string& host, const std::string& p
         throw std::invalid_argument("port must be in range 1..65535");
     }
 
-    return tcp_client_->check(host, static_cast<std::uint16_t>(parsed_port), diagnostics_config_.tcp_timeout_ms);
+    const int timeout_ms = std::clamp(diagnostics_config_.tcp_timeout_ms, 1, 5000);
+    return tcp_client_->check(host, static_cast<std::uint16_t>(parsed_port), timeout_ms);
 }
 
 } // namespace ops_agent::features::tcp_check

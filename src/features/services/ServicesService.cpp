@@ -6,6 +6,16 @@
 namespace ops_agent::features::services {
 namespace {
 
+std::string trim(const std::string& value)
+{
+    const auto begin = value.find_first_not_of(" \t\r\n");
+    if (begin == std::string::npos) {
+        return {};
+    }
+    const auto end = value.find_last_not_of(" \t\r\n");
+    return value.substr(begin, end - begin + 1);
+}
+
 std::vector<std::string> splitNames(const std::string& names_query)
 {
     std::vector<std::string> names;
@@ -13,8 +23,9 @@ std::vector<std::string> splitNames(const std::string& names_query)
     std::string item;
 
     while (std::getline(stream, item, ',')) {
-        if (!item.empty()) {
-            names.push_back(item);
+        auto name = trim(item);
+        if (!name.empty()) {
+            names.push_back(std::move(name));
         }
     }
 

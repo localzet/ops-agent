@@ -57,6 +57,7 @@ nlohmann::json toJson(const features::services::ServicesResponseDto& dto)
     for (const auto& service : dto.services) {
         services.push_back({
             {"name", service.name},
+            {"status", service.status},
             {"load_state", service.load_state},
             {"active_state", service.active_state},
             {"sub_state", service.sub_state},

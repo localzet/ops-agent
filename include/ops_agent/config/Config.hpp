@@ -13,6 +13,7 @@ struct ServerConfig {
 
 struct DiagnosticsConfig {
     int tcp_timeout_ms{2000};
+    int systemctl_timeout_ms{2000};
     std::size_t max_services_per_request{20};
 };
 

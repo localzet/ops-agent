@@ -1,7 +1,8 @@
 #include "ops_agent/infrastructure/linux/ProcfsSystemProbe.hpp"
 
 #include <fstream>
-#include <sstream>
+#include <cerrno>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 
@@ -30,11 +31,13 @@ features::system::CpuLoadDto readCpuLoad()
 {
     std::ifstream file{"/proc/loadavg"};
     if (!file.is_open()) {
-        return {};
+        throw std::runtime_error("failed to open /proc/loadavg");
     }
 
     features::system::CpuLoadDto dto;
-    file >> dto.one_minute >> dto.five_minutes >> dto.fifteen_minutes;
+    if (!(file >> dto.one_minute >> dto.five_minutes >> dto.fifteen_minutes)) {
+        throw std::runtime_error("failed to parse /proc/loadavg");
+    }
     return dto;
 }
 
@@ -42,7 +45,7 @@ features::system::MemoryDto readMemory()
 {
     std::ifstream file{"/proc/meminfo"};
     if (!file.is_open()) {
-        return {};
+        throw std::runtime_error("failed to open /proc/meminfo");
     }
 
     std::string key;
@@ -57,6 +60,9 @@ features::system::MemoryDto readMemory()
         } else if (key == "MemAvailable:") {
             available_kb = value_kb;
         }
+    }
+    if (total_kb == 0 || available_kb == 0) {
+        throw std::runtime_error("failed to parse /proc/meminfo");
     }
 
     features::system::MemoryDto dto;
@@ -73,7 +79,7 @@ features::system::DiskDto readDisk()
 #if defined(__linux__)
     struct statvfs stats {};
     if (statvfs("/", &stats) != 0) {
-        return dto;
+        throw std::runtime_error(std::string{"failed to statvfs /: "} + std::strerror(errno));
     }
 
     dto.total_bytes = static_cast<std::uint64_t>(stats.f_blocks) * stats.f_frsize;
@@ -88,11 +94,13 @@ std::int64_t readUptime()
 {
     std::ifstream file{"/proc/uptime"};
     if (!file.is_open()) {
-        return 0;
+        throw std::runtime_error("failed to open /proc/uptime");
     }
 
     double uptime = 0.0;
-    file >> uptime;
+    if (!(file >> uptime)) {
+        throw std::runtime_error("failed to parse /proc/uptime");
+    }
     return static_cast<std::int64_t>(uptime);
 }
 

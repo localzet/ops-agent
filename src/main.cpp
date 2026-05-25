@@ -84,7 +84,8 @@ int main(int argc, char** argv)
         auto clock = std::make_shared<ops_agent::common::SystemClock>();
         auto host_info = std::make_shared<ops_agent::infrastructure::linux::HostInfoProvider>();
         auto system_probe = std::make_shared<ops_agent::infrastructure::linux::ProcfsSystemProbe>();
-        auto service_manager = std::make_shared<ops_agent::infrastructure::linux::SystemdServiceManager>();
+        auto service_manager = std::make_shared<ops_agent::infrastructure::linux::SystemdServiceManager>(
+            config.diagnostics.systemctl_timeout_ms);
         auto tcp_client = std::make_shared<ops_agent::infrastructure::linux::SocketTcpClient>();
         auto metrics_service = std::make_shared<ops_agent::features::metrics::MetricsService>();
 
