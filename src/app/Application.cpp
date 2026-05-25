@@ -3,6 +3,7 @@
 #include "ops_agent/infrastructure/http/HttpResponse.hpp"
 
 #include <exception>
+#include <csignal>
 #include <stdexcept>
 #include <string>
 
@@ -46,18 +47,52 @@ Application::Application(config::Config config,
 {
     app_.get_middleware<infrastructure::http::RequestLoggingMiddleware>().setLogger(logger_);
     app_.get_middleware<infrastructure::http::RequestLoggingMiddleware>().setMetrics(metrics_service_);
+    app_.get_middleware<infrastructure::http::RequestSecurityMiddleware>().setMaxRequestBodyBytes(
+        config_.server.max_request_body_bytes);
+    app_.get_middleware<infrastructure::http::ApiKeyAuthMiddleware>().setApiKey(config_.security.api_key);
+    app_.get_middleware<infrastructure::http::RateLimitMiddleware>().configure(config_.rate_limit);
     registerRoutes();
 }
 
 void Application::run()
 {
-    logger_->info("event=start host={} port={} threads={}", config_.server.host, config_.server.port, config_.server.threads);
-    app_.bindaddr(config_.server.host).port(config_.server.port).concurrency(config_.server.threads).run();
+    logger_->info("{{\"event\":\"start\",\"host\":\"{}\",\"port\":{},\"threads\":{},\"auth_enabled\":{}}}",
+                  config_.server.host,
+                  config_.server.port,
+                  config_.server.threads,
+                  config_.security.api_key.empty() ? "false" : "true");
+    app_.server_name("")
+        .bindaddr(config_.server.host)
+        .port(config_.server.port)
+        .concurrency(config_.server.threads)
+        .timeout(config_.server.timeout_sec)
+        .signal_clear()
+        .signal_add(SIGINT)
+        .signal_add(SIGTERM)
+        .run();
+}
+
+void Application::stop()
+{
+    logger_->info("{{\"event\":\"shutdown\"}}");
+    app_.stop();
 }
 
 void Application::registerRoutes()
 {
     CROW_ROUTE(app_, "/health").methods(crow::HTTPMethod::GET)([this]() {
+        return safely([this]() {
+            return infrastructure::http::jsonResponse(infrastructure::http::toJson(health_service_->getHealth()));
+        });
+    });
+
+    CROW_ROUTE(app_, "/health/live").methods(crow::HTTPMethod::GET)([this]() {
+        return safely([this]() {
+            return infrastructure::http::jsonResponse({{"status", "ok"}});
+        });
+    });
+
+    CROW_ROUTE(app_, "/health/ready").methods(crow::HTTPMethod::GET)([this]() {
         return safely([this]() {
             return infrastructure::http::jsonResponse(infrastructure::http::toJson(health_service_->getHealth()));
         });

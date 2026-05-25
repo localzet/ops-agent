@@ -10,15 +10,18 @@ option(OPS_AGENT_BUILD_TESTS "Build tests" ON)
 
 include(FetchContent)
 
-FetchContent_Declare(
-    asio
-    URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-30-2.tar.gz
-)
-FetchContent_GetProperties(asio)
-if(NOT asio_POPULATED)
-    FetchContent_Populate(asio)
+find_path(ASIO_INCLUDE_DIR asio.hpp)
+if(NOT ASIO_INCLUDE_DIR)
+    FetchContent_Declare(
+        asio
+        URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-30-2.tar.gz
+    )
+    FetchContent_GetProperties(asio)
+    if(NOT asio_POPULATED)
+        FetchContent_Populate(asio)
+    endif()
+    set(ASIO_INCLUDE_DIR "${asio_SOURCE_DIR}/asio/include" CACHE PATH "Standalone Asio include path" FORCE)
 endif()
-set(ASIO_INCLUDE_DIR "${asio_SOURCE_DIR}/asio/include" CACHE PATH "Standalone Asio include path" FORCE)
 
 set(CROW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CROW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

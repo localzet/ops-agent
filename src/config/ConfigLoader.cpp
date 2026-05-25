@@ -45,6 +45,11 @@ int parseInt(const std::string& value, const char* field)
     return parsed;
 }
 
+bool parseBool(const std::string& value)
+{
+    return value == "1" || value == "true" || value == "yes" || value == "on";
+}
+
 } // namespace
 
 Config ConfigLoader::load(const std::optional<std::string>& path) const
@@ -88,6 +93,10 @@ Config ConfigLoader::load(const std::optional<std::string>& path) const
                 config.server.port = parseUint16(value, "server.port");
             } else if (full_key == "server.threads") {
                 config.server.threads = parseUint16(value, "server.threads");
+            } else if (full_key == "server.timeout_sec") {
+                config.server.timeout_sec = parseUint16(value, "server.timeout_sec");
+            } else if (full_key == "server.max_request_body_bytes") {
+                config.server.max_request_body_bytes = std::stoull(value);
             } else if (full_key == "diagnostics.tcp_timeout_ms") {
                 config.diagnostics.tcp_timeout_ms = parseInt(value, "diagnostics.tcp_timeout_ms");
             } else if (full_key == "diagnostics.systemctl_timeout_ms") {
@@ -98,6 +107,14 @@ Config ConfigLoader::load(const std::optional<std::string>& path) const
                 config.logging.level = value;
             } else if (full_key == "storage.sqlite_path") {
                 config.storage.sqlite_path = value;
+            } else if (full_key == "security.api_key") {
+                config.security.api_key = value;
+            } else if (full_key == "rate_limit.enabled") {
+                config.rate_limit.enabled = parseBool(value);
+            } else if (full_key == "rate_limit.requests_per_second") {
+                config.rate_limit.requests_per_second = std::stod(value);
+            } else if (full_key == "rate_limit.burst") {
+                config.rate_limit.burst = std::stoull(value);
             }
         }
     }
@@ -114,8 +131,17 @@ void ConfigLoader::applyEnv(Config& config)
     if (auto value = envValue("OPS_AGENT_PORT")) {
         config.server.port = parseUint16(*value, "OPS_AGENT_PORT");
     }
+    if (auto value = envValue("OPS_PORT")) {
+        config.server.port = parseUint16(*value, "OPS_PORT");
+    }
     if (auto value = envValue("OPS_AGENT_THREADS")) {
         config.server.threads = parseUint16(*value, "OPS_AGENT_THREADS");
+    }
+    if (auto value = envValue("OPS_AGENT_TIMEOUT_SEC")) {
+        config.server.timeout_sec = parseUint16(*value, "OPS_AGENT_TIMEOUT_SEC");
+    }
+    if (auto value = envValue("OPS_AGENT_MAX_REQUEST_BODY_BYTES")) {
+        config.server.max_request_body_bytes = std::stoull(*value);
     }
     if (auto value = envValue("OPS_AGENT_TCP_TIMEOUT_MS")) {
         config.diagnostics.tcp_timeout_ms = parseInt(*value, "OPS_AGENT_TCP_TIMEOUT_MS");
@@ -129,8 +155,26 @@ void ConfigLoader::applyEnv(Config& config)
     if (auto value = envValue("OPS_AGENT_LOG_LEVEL")) {
         config.logging.level = *value;
     }
+    if (auto value = envValue("OPS_LOG_LEVEL")) {
+        config.logging.level = *value;
+    }
     if (auto value = envValue("OPS_AGENT_SQLITE_PATH")) {
         config.storage.sqlite_path = *value;
+    }
+    if (auto value = envValue("OPS_AGENT_API_KEY")) {
+        config.security.api_key = *value;
+    }
+    if (auto value = envValue("OPS_API_KEY")) {
+        config.security.api_key = *value;
+    }
+    if (auto value = envValue("OPS_AGENT_RATE_LIMIT_ENABLED")) {
+        config.rate_limit.enabled = parseBool(*value);
+    }
+    if (auto value = envValue("OPS_AGENT_RATE_LIMIT_RPS")) {
+        config.rate_limit.requests_per_second = std::stod(*value);
+    }
+    if (auto value = envValue("OPS_AGENT_RATE_LIMIT_BURST")) {
+        config.rate_limit.burst = std::stoull(*value);
     }
 }
 

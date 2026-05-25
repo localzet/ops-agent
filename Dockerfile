@@ -1,11 +1,14 @@
 FROM debian:bookworm-slim AS builder
 
+RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: bookworm\nComponents: main\n\nTypes: deb\nURIs: http://deb.debian.org/debian-security\nSuites: bookworm-security\nComponents: main\n' > /etc/apt/sources.list.d/debian.sources
+
 RUN apt-get -o Acquire::Retries=5 update \
     && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
         build-essential \
         ca-certificates \
         cmake \
         git \
+        libasio-dev \
         libcurl4-openssl-dev \
         libsqlite3-dev \
         ninja-build \
@@ -18,6 +21,8 @@ RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DOPS_AGENT_BUILD_TE
     && cmake --build build --target ops-agent
 
 FROM debian:bookworm-slim AS runtime
+
+RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: bookworm\nComponents: main\n\nTypes: deb\nURIs: http://deb.debian.org/debian-security\nSuites: bookworm-security\nComponents: main\n' > /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get -o Acquire::Retries=5 update \
     && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \

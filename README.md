@@ -15,9 +15,19 @@ cmake --build build
 OPS_AGENT_CONFIG=config/config.example.yml ./build/ops-agent
 ```
 
+Common environment overrides:
+
+```bash
+OPS_PORT=8080
+OPS_API_KEY=change-me
+OPS_LOG_LEVEL=info
+```
+
 ## Endpoints
 
 - `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
 - `GET /system`
 - `GET /services?names=postfix,docker`
 - `GET /check/tcp?host=1.1.1.1&port=443`

@@ -57,6 +57,32 @@ void printHelp()
               << "  OPS_AGENT_PORT=8080\n";
 }
 
+std::string jsonEscape(const std::string& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size());
+    for (const char ch : value) {
+        switch (ch) {
+        case '\\':
+            escaped += "\\\\";
+            break;
+        case '"':
+            escaped += "\\\"";
+            break;
+        case '\n':
+            escaped += "\\n";
+            break;
+        case '\r':
+            escaped += "\\r";
+            break;
+        default:
+            escaped.push_back(ch);
+            break;
+        }
+    }
+    return escaped;
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -72,13 +98,13 @@ int main(int argc, char** argv)
 
         auto logger = spdlog::stdout_color_mt("ops-agent");
         logger->set_level(parseLogLevel(config.logging.level));
-        logger->set_pattern("%Y-%m-%dT%H:%M:%S.%eZ level=%l logger=%n %v");
+        logger->set_pattern("%v");
 
         auto sqlite = std::make_shared<ops_agent::infrastructure::persistence::SQLiteConnection>(config.storage.sqlite_path);
         try {
             sqlite->initialize();
         } catch (const std::exception& error) {
-            logger->warn("event=sqlite_init_failed error={}", error.what());
+            logger->warn("{{\"event\":\"sqlite_init_failed\",\"error\":\"{}\"}}", jsonEscape(error.what()));
         }
 
         auto clock = std::make_shared<ops_agent::common::SystemClock>();
