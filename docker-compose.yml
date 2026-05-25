@@ -6,6 +6,7 @@ services:
     environment:
       OPS_AGENT_HOST: "0.0.0.0"
       OPS_PORT: "8080"
+      OPS_API_KEY: "${OPS_API_KEY:?OPS_API_KEY must be set before exposing ops-agent}"
       OPS_LOG_LEVEL: "info"
     ports:
       - "8080:8080"

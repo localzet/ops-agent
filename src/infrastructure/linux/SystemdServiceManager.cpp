@@ -14,8 +14,11 @@
 #if defined(__linux__)
 #include <fcntl.h>
 #include <poll.h>
+#include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+extern char** environ;
 #endif
 
 namespace ops_agent::infrastructure::linux {
@@ -91,50 +94,65 @@ void appendAvailable(int fd, std::string& output)
 
 CommandResult runSystemctlShow(const std::string& name, int timeout_ms)
 {
-    int stdout_pipe[2]{};
-    int stderr_pipe[2]{};
-    if (pipe(stdout_pipe) != 0 || pipe(stderr_pipe) != 0) {
+    int stdout_pipe[2]{-1, -1};
+    int stderr_pipe[2]{-1, -1};
+    if (pipe2(stdout_pipe, O_CLOEXEC) != 0 || pipe2(stderr_pipe, O_CLOEXEC) != 0) {
+        if (stdout_pipe[0] >= 0) {
+            close(stdout_pipe[0]);
+        }
+        if (stdout_pipe[1] >= 0) {
+            close(stdout_pipe[1]);
+        }
+        if (stderr_pipe[0] >= 0) {
+            close(stderr_pipe[0]);
+        }
+        if (stderr_pipe[1] >= 0) {
+            close(stderr_pipe[1]);
+        }
         throw std::runtime_error("failed to create subprocess pipe");
     }
 
-    const pid_t pid = fork();
-    if (pid < 0) {
+    const std::string unit = name.find(".service") == std::string::npos ? name + ".service" : name;
+    const char* systemctl_path = access("/usr/bin/systemctl", X_OK) == 0 ? "/usr/bin/systemctl" : "/bin/systemctl";
+
+    posix_spawn_file_actions_t actions{};
+    if (posix_spawn_file_actions_init(&actions) != 0) {
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
         close(stderr_pipe[0]);
         close(stderr_pipe[1]);
-        throw std::runtime_error("failed to fork systemctl process");
+        throw std::runtime_error("failed to initialize subprocess actions");
     }
 
-    if (pid == 0) {
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        dup2(stderr_pipe[1], STDERR_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, stdout_pipe[1], STDOUT_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, stderr_pipe[1], STDERR_FILENO);
+    posix_spawn_file_actions_addclose(&actions, stdout_pipe[0]);
+    posix_spawn_file_actions_addclose(&actions, stdout_pipe[1]);
+    posix_spawn_file_actions_addclose(&actions, stderr_pipe[0]);
+    posix_spawn_file_actions_addclose(&actions, stderr_pipe[1]);
+
+    std::array<char*, 9> argv{
+        const_cast<char*>(systemctl_path),
+        const_cast<char*>("show"),
+        const_cast<char*>("--no-pager"),
+        const_cast<char*>("--property=LoadState"),
+        const_cast<char*>("--property=ActiveState"),
+        const_cast<char*>("--property=SubState"),
+        const_cast<char*>("--property=Description"),
+        const_cast<char*>(unit.c_str()),
+        nullptr,
+    };
+
+    pid_t pid = -1;
+    const int spawn_status = posix_spawn(&pid, systemctl_path, &actions, nullptr, argv.data(), environ);
+    posix_spawn_file_actions_destroy(&actions);
+
+    if (spawn_status != 0) {
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
         close(stderr_pipe[0]);
         close(stderr_pipe[1]);
-
-        const std::string unit = name.find(".service") == std::string::npos ? name + ".service" : name;
-        char command[] = "systemctl";
-        char arg_show[] = "show";
-        char arg_no_pager[] = "--no-pager";
-        char arg_load[] = "--property=LoadState";
-        char arg_active[] = "--property=ActiveState";
-        char arg_sub[] = "--property=SubState";
-        char arg_description[] = "--property=Description";
-        char* const argv[] = {
-            command,
-            arg_show,
-            arg_no_pager,
-            arg_load,
-            arg_active,
-            arg_sub,
-            arg_description,
-            const_cast<char*>(unit.c_str()),
-            nullptr,
-        };
-        execvp(command, argv);
-        _exit(127);
+        throw std::runtime_error(std::string{"failed to spawn systemctl: "} + std::strerror(spawn_status));
     }
 
     close(stdout_pipe[1]);
